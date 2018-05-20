@@ -11,6 +11,7 @@ GLdouble zeepkist_x = 0;
 //GLdouble xlens = 3, ylens = 3, zlens = 10;
 GLdouble xlens = 9, ylens = 9, zlens = 30;
 //GLdouble xlens = 6, ylens = 6, zlens = 20;
+//GLdouble xlens = 1, ylens = 17, zlens = 1; //top
 GLdouble xref = 1.0, yref = 1.0, zref = 0.0;
 GLdouble xvw = 0.0, yvw = 1.0, zvw = 0.0;
 GLdouble xmin = -2.0, xmax = 4.0, ymin = -2.0, ymax = 3.0;
@@ -26,7 +27,6 @@ GLdouble verhouding = 0;
 char roos[80] = "falken_rim.jpg";
 GLubyte texVier[ZESTIEN][ZESTIEN][4];
 static GLuint texNaam[ZES];
-
 
 void myinit(void)
 {
@@ -70,8 +70,8 @@ void toetsen( unsigned char key, int x, int y)
     case 'q' : exit(0);                break;
   }
   
-  //printf("Oog bl%5.1f gr%5.1f rd%5.1f ", xlens, ylens, zlens );
-  //printf("  Ref %5.1f %5.1f %5.1f ViR %4.1f %4.1f %4.1f\n", xref, yref, zref, xvw,yvw,zvw);
+  printf("Oog bl%5.1f gr%5.1f rd%5.1f ", xlens, ylens, zlens );
+  printf("  Ref %5.1f %5.1f %5.1f ViR %4.1f %4.1f %4.1f\n", xref, yref, zref, xvw,yvw,zvw);
   glutPostRedisplay();
 }
 
@@ -106,10 +106,8 @@ void assen()
   glPopMatrix();
 }
 
-
-
-#define slices  8
-#define stacks  8
+#define slices  30
+#define stacks  30
 
 #define tire_diameter 2
 #define tire_height   0.8
@@ -156,8 +154,6 @@ void wiel(float tire_width)
 
 void onderstel_tube(float tube_lengt)
 {
-
-
     GLUquadricObj *frame;
     frame = gluNewQuadric();
     glColor3f(1.0,0.0,0.0);
@@ -174,6 +170,20 @@ void onderstel_tube(float tube_lengt)
     gluCylinder( frame, tube_diameter, tube_diameter, tube_lengt, slices, stacks);
 }
 
+void zitje(float seat_height, float seat_width)
+{
+    GLUquadricObj *top;
+    top = gluNewQuadric();
+
+    glPushMatrix();
+    glTranslated(0 ,seat_height,frame_width/2);
+    glRotated(90, 1, 0, 0);
+    glutSolidCone(seat_width,seat_height, slices, stacks);
+    gluDisk(top, 0, seat_width,  slices, stacks);
+    //Todo: als extra een Rugleuning
+    glPopMatrix();
+}
+
 void onderstel()
 {
     wiel(tire_width_b);
@@ -187,6 +197,9 @@ void onderstel()
     glTranslatef(-frame_width/2 , 0, 0);
     onderstel_tube(frame_lengt);
     glPopMatrix();
+
+    //Zitje
+    zitje(frame_width/8,frame_width/6);
 
     //2de wiel
     glPushMatrix();
@@ -236,8 +249,90 @@ void onderstel()
     glTranslatef(tire_width_s+2*small_gap, 0, 0);
     onderstel_tube(tire_diameter+small_gap);
     glPopMatrix();
-
     glPopMatrix();
+}
+
+//Carrosserie - Complex vlak met bezier
+void carrosserie()
+{
+    glColor3f(0.1, 0.1, 0.8);
+
+    //Punten carroserie
+    GLfloat carroseriepunten[4][6][3] = {
+            { {-2.5,-1,-1}, {3,-1,-1}, {4,-1,1.5}, {6,-1,1.9},  {8,-1,1.9},   {10,-1,3.5}},
+            { {-2.5,2, -1}, {3, 1,-1}, {4,1,1.7},  {5.8,1,2.3},   {7.7,1,2.3},  {9.5,1,3.5}},
+            { {-2.5,3, -1}, {3, 2,-1}, {4,2,1.9},  {5.4,2.7},   {7.3,2,2.9},  {8,2,3.5}},
+            { {-2.5,5, -1}, {3, 3,-1}, {4,3,3.5},  {5,3.5},   {6.4,3,3.5},  {7.2,3,3.5}},
+    };
+
+    /*if(0)
+    {
+        glColor3f(0,0.5,1);
+        glPointSize(2);
+
+        glBegin(GL_POINTS);
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 6; j++)
+            {
+                glVertex3f(carroseriepunten[i][j][0], carroseriepunten[i][j][1], carroseriepunten[i][j][2]);
+            }
+        }
+        glEnd();
+    }*/
+
+    glPushMatrix();
+    glMap2f(GL_MAP2_VERTEX_3, 0, 1, 3, 6, 0, 1, 18, 4, &carroseriepunten[0][0][0]);
+    glEnable(GL_MAP2_VERTEX_3);
+    glMapGrid2f(20, 0.0, 1.0, 20, 0.0, 1.0);
+    glEvalMesh2(GL_FILL, 0, 20, 0, 20);
+    glDisable(GL_MAP2_VERTEX_3);
+    glPopMatrix();
+
+    glColor3f(0.8, 0.1, 0.1);
+    glBegin(GL_QUADS);
+        glVertex3f(-2.5,-1,-1);
+        glVertex3f(-2.5, 5,-1);
+        glVertex3f(-2.5, 5, 8);
+        glVertex3f(-2.5,-1, 8);
+    glEnd();
+}
+
+void boog()
+{
+    glColor3f(0.1, 0.8, 0.0);
+
+    GLUnurbsObj *boog;
+    bog = gluNewNurbsRenderer();
+    gluNurbsProperty(boog, GLU_DISPLAY_MODE, GLU_FILL);
+
+    //Punten boog
+    GLfloqt boogpunten[4][6][3] = {
+            { {-2.5,-1,-1}, {3,-1,-1}, {4,-1,1.5}, {6,-1,1.9},  {8,-1,1.9},   {10,-1,3.5}},
+            { {-2.5,2, -1}, {3, 1,-1}, {4,1,1.7},  {5.8,1,2.3},   {7.7,1,2.3},  {9.5,1,3.5}},
+            { {-2.5,3, -1}, {3, 2,-1}, {4,2,1.9},  {5.4,2.7},   {7.3,2,2.9},  {8,2,3.5}},
+            { {-2.5,5, -1}, {3, 3,-1}, {4,3,3.5},  {5,3.5},   {6.4,3,3.5},  {7.2,3,3.5}},
+    };
+
+    if(1)
+    {
+        glColor3f(0,0.5,1);
+        glPointSize(2);
+
+        glBegin(GL_POINTS);
+        for(int i = 0; i < 4; i++)
+        {
+            for(int j = 0; j < 6; j++)
+            {
+                glVertex3f(boogpunten[i][j][0], boogpunten[i][j][1], boogpunten[i][j][2]);
+            }
+        }
+        glEnd();
+    }
+
+    gluBeginSurface(opp);
+        gluNurbsSurface(boog, 8, knots, 8, knots, 5*3, 3, &arcs[0][0][0], 3, 3, GL_MAP2_VERTEX_3);
+    gluEndSurface(opp);
 }
 
 //Drawing funciton
@@ -254,6 +349,12 @@ void zeepkist(void)
     glPushMatrix();
     glTranslatef(zeepkist_x , 0, 0);
     onderstel();
+    carrosserie();
+    glScaled(1,1,-1);
+    glTranslatef(0, 0 ,-frame_width);
+    carrosserie();
+
+
     glPopMatrix();
 
     if(race)
